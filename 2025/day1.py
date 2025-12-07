@@ -1,19 +1,19 @@
 with open("input.txt") as f:
     data = f.read().splitlines()
 
-part1 = 0
-part2 = 0
+part1: int = 0
+part2: int = 0
 
-dial = 50
+dial: int = 50
 for instruction in data:
-    side = instruction[0]
-    rotations = int(instruction[1:])
+    side: str = instruction[0]
+    rotations: int = int(instruction[1:])
 
     part2 += rotations // 100
-    move = rotations % 100
+    move: int = rotations % 100
 
     if side == "L":
-        old_dial = dial
+        old_dial: int = dial
         dial -= move
 
         if old_dial != 0 and dial <= 0:
@@ -28,5 +28,5 @@ for instruction in data:
     if dial == 0:
         part1 += 1
 
-print(f"Password Part 1: {part1}")
-print(f"Password Part 2: {part2}")
+print(f"Part 1: {part1}")
+print(f"Part 2: {part2}")

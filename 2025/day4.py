@@ -52,5 +52,5 @@ while n_removed_rolls != 0:
     n_removed_rolls = get_removable_rolls(data)
     part2 += n_removed_rolls
 
-print(f"Password Part 1: {part1}")
-print(f"Password Part 2: {part2}")
+print(f"Part 1: {part1}")
+print(f"Part 2: {part2}")

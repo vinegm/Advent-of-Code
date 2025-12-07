@@ -25,5 +25,5 @@ for batteries in data:
     part1 += get_best_batteries(batteries, 0, 0, 2)
     part2 += get_best_batteries(batteries, 0, 0, 12)
 
-print(f"Battery Part 1: {part1}")
-print(f"Battery Part 2: {part2}")
+print(f"Part 1: {part1}")
+print(f"Part 2: {part2}")
