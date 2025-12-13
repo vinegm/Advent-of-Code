@@ -1,28 +1,16 @@
-from itertools import combinations
-from collections import deque
+from itertools import product
 
 
-with open("example.txt") as f:
-    light_target = []
+with open("input10.txt") as f:
+    lights = []
     buttons = []
-    joltage = []
+    joltages = []
     for line in f.read().splitlines():
         split_line = line.split()
 
-        light_target.append(split_line[0])
+        lights.append(split_line[0])
         buttons.append(split_line[1:-1])
-        joltage.append(split_line[-1])
-
-
-def parse_light(light_target: str) -> list[bool]:
-    res = []
-    for char in light_target[1:-1]:
-        if char == "#":
-            res.append(True)
-        else:
-            res.append(False)
-
-    return tuple(res)
+        joltages.append(split_line[-1])
 
 
 def str_to_tuple(button: str) -> tuple[int]:
@@ -33,82 +21,110 @@ def str_to_tuple(button: str) -> tuple[int]:
     return tuple(res)
 
 
-def press_light(cur_jolt: list[bool], button: tuple[int]) -> list[bool]:
-    new = cur_jolt.copy()
-    for idx in button:
-        new[idx] = not new[idx]
+def build_ops_patterns(buttons: list[tuple[int]], n_jolts: int, n_lights: int):
+    ops = {}
+    patterns = {}
+    for pressed in product((0, 1), repeat=len(buttons)):
+        jolt = [0] * n_jolts
+        lights = [0] * n_lights
 
-    return new
+        for i, press in enumerate(pressed):
+            if press:
+                for idx in buttons[i]:
+                    if idx < n_jolts:
+                        jolt[idx] += 1
+
+                    if idx < n_lights:
+                        lights[idx] = not lights[idx]
+
+        lights_tup = tuple(lights)
+        if lights_tup not in patterns:
+            patterns[lights_tup] = []
+
+        ops[pressed] = tuple(jolt)
+        patterns[lights_tup].append(pressed)
+
+    return ops, patterns
 
 
-def press_jolt(cur_jolt: tuple[int], button: tuple[int]) -> tuple[int]:
-    new = list(cur_jolt)
-    for idx in button:
-        new[idx] += 1
+def min_presses_jolt(ops: dict, patterns: dict, target: tuple[int]) -> int:
+    cache: dict[tuple[int], int] = {}
+    visiting: set[tuple[int]] = set()
 
-    return tuple(new)
+    def _min(remaining: tuple[int]) -> int:
+        if all(r_light == 0 for r_light in remaining):
+            return 0
+
+        if remaining in cache:
+            return cache[remaining]
+
+        visiting.add(remaining)
+        min_presses = float("inf")
+
+        lights_list: list[int] = []
+        for x in remaining:
+            lights_list.append(x % 2)
+
+        lights = tuple(lights_list)
+        for pressed in patterns.get(lights, ()):
+            diff = ops[pressed]
+
+            new_target_list: list[int] = []
+            for a, b in zip(diff, remaining):
+                new_target_list.append((b - a) // 2)
+
+            new_target = tuple(new_target_list)
+            if new_target in visiting:
+                continue
+
+            candidate = sum(pressed) + 2 * _min(new_target)
+            if min_presses > candidate:
+                min_presses = candidate
+
+        visiting.remove(remaining)
+        cache[remaining] = min_presses
+        return min_presses
+
+    return _min(target)
+
+
+data: list = []
+for i in range(len(buttons)):
+    new_lights = []
+    for char in lights[i][1:-1]:
+        if char == "#":
+            new_lights.append(1)
+        else:
+            new_lights.append(0)
+
+    new_lights = tuple(new_lights)
+    buttons[i] = [str_to_tuple(b) for b in buttons[i]]
+    joltages[i] = str_to_tuple(joltages[i])
+
+    data.append((new_lights, buttons[i], joltages[i]))
 
 
 part1: int = 0
 part2: int = 0
 
-data: list = []
-for i in range(len(buttons)):
-    light_target[i] = parse_light(light_target[i])
-    buttons[i] = [str_to_tuple(b) for b in buttons[i]]
-    joltage[i] = str_to_tuple(joltage[i])
-
-    data.append((light_target[i], buttons[i], joltage[i]))
-
-n_lines = len(data)
 for line in data:
-
-    light_target, buttons, joltage_target = line
+    lights, buttons, joltage_target = line
 
     n_buttons = len(buttons)
-    n_lights = len(light_target)
+    n_lights = len(lights)
     n_jolts: int = len(joltage_target)
 
-    found: bool = False
-    for light_presses in range(n_buttons + 1):
-        for combination in combinations(range(n_buttons), light_presses):
-            cur = [False] * n_lights
-            for idx in combination:
-                cur = press_light(cur, buttons[idx])
+    ops, patterns = build_ops_patterns(buttons, n_jolts, n_lights)
 
-            if tuple(cur) == light_target:
-                found = True
-                break
+    min_count = float("inf")
+    for pressed_buttons in patterns[lights]:
+        count = sum(pressed_buttons)
+        if count < min_count:
+            min_count = count
 
-        if found:
-            break
+    part1 += min_count
 
-    part1 += light_presses
-
-    start: tuple = tuple([0] * n_jolts)
-    buffer = deque([start])
-    already_seen: set = {start}
-
-    found: bool = False
-    while buffer and not found:
-        part2 += 1
-        for _ in range(len(buffer)):
-            cur_jolt = buffer.popleft()
-            for button in buttons:
-                new = press_jolt(cur_jolt, button)
-                if new == joltage_target:
-                    found = True
-                    break
-
-                if any(new[j] > joltage_target[j] for j in range(n_jolts)):
-                    continue
-
-                if new not in already_seen:
-                    already_seen.add(new)
-                    buffer.append(new)
-
-            if found:
-                break
+    part2 += min_presses_jolt(ops, patterns, joltage_target)
 
 
 print(f"Part 1: {part1}")

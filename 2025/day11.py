@@ -7,8 +7,9 @@ with open("input.txt") as f:
 
 def count_paths(graph: dict, start: str, target: str) -> int:
     cache: dict[str, int] = {}
+    visiting: set[str] = set()
 
-    def _count(node: str, visiting: set[str]) -> int:
+    def _count(node: str) -> int:
         if node == target:
             return 1
 
@@ -18,14 +19,14 @@ def count_paths(graph: dict, start: str, target: str) -> int:
         visiting.add(node)
         total = 0
         for nxt in graph.get(node, ()):
-            total += _count(nxt, visiting)
+            total += _count(nxt)
 
         visiting.remove(node)
         cache[node] = total
 
         return total
 
-    return _count(start, set())
+    return _count(start)
 
 
 part1: int = 0
